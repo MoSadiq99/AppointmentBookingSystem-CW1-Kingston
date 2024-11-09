@@ -45,6 +45,7 @@ public enum TimeSlots {
         return day + ": " + timeRange;
     }
 
+    //? Method to convert String to TimeSlots
     public static TimeSlots fromString(String text) {
         for (TimeSlots slot : TimeSlots.values()) {
             if (slot.day.equalsIgnoreCase(text)) {

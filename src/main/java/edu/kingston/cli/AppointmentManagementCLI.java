@@ -21,7 +21,6 @@ public class AppointmentManagementCLI {
     private final AppointmentService appointmentService;
     private final TreatmentService treatmentService;
     private final HomeCLI homeCLI;
-    LocalTime sessionTime = LocalTime.of(0, 15);
 
     public AppointmentManagementCLI(HomeCLI homeCLI, DoctorService doctorService, PatientService patientService, AppointmentService appointmentService, TreatmentService treatmentService) {
         this.homeCLI = homeCLI;
@@ -29,14 +28,6 @@ public class AppointmentManagementCLI {
         this.patientService = patientService;
         this.appointmentService = appointmentService;
         this.treatmentService = treatmentService;
-    }
-
-    public String generateIdForAppointment() {
-        String base = "A";
-        String formattedCounter = String.format("%02d", counter);
-        counter++;
-        String id = base + formattedCounter;
-        return id;
     }
 
     public void appointmentManagement(Scanner scanner) {
@@ -83,6 +74,15 @@ public class AppointmentManagementCLI {
         }
     }
 
+    //? Generate unique appointment id
+    public String generateIdForAppointment() {
+        String base = "A";
+        String formattedCounter = String.format("%02d", counter);
+        counter++;
+        String id = base + formattedCounter;
+        return id;
+    }
+
     //! Add Appointment
     public void addAppointment(Scanner scanner) {
         System.out.println("\n+--------------------------------------------------------------------+");
@@ -95,7 +95,7 @@ public class AppointmentManagementCLI {
         System.out.println("\tAppointment id: " + apptId);
         System.out.print("+--------------------------+");
 
-        //? Select doctor
+        //? List doctors
         System.out.println("\n\n--------------------------Doctors List-------------------------------");
         List<Doctor> doctorList = doctorService.getDoctorList();
 
@@ -114,6 +114,7 @@ public class AppointmentManagementCLI {
         }
         System.out.println("---------------------------------------------------------------------");
 
+        //? Select doctor
         Doctor doctor = null;
         while (doctor == null) {
             System.out.print("Select a Doctor by entering the Number (or 'q' to Quit): ");
@@ -130,11 +131,10 @@ public class AppointmentManagementCLI {
             }
         }
 
-
         //? Suggest upcoming two available dates based on doctor's availability
         List<LocalDate> suggestedDates = doctorService.getUpcomingTwoAvailableDates(doctor);
 
-        // Display suggested dates
+        //? Display suggested dates
         System.out.println("\nUpcoming available dates for Doctor " + doctor.getName() + ":");
         for (int i = 0; i < suggestedDates.size(); i++) {
             System.out.println((i + 1) + ". " + suggestedDates.get(i));
@@ -190,7 +190,7 @@ public class AppointmentManagementCLI {
         //? Get the time for the appointment
         List<LocalTime> availableSlots = doctorService.getAvailableTimeSlots(doctor, appointmentDate);
 
-        // Display available time slots
+        //? Display available time slots
         if (availableSlots.isEmpty()) {
             System.out.println("No available time slots for this date.");
             return;
@@ -260,6 +260,7 @@ public class AppointmentManagementCLI {
         Patient patient = new Patient(patientId, name, phone, email, nic);
         patientService.addPatient(patient);
 
+        //? List treatments
         System.out.println("\n-------------------------- Treatments List -------------------------------");
         System.out.printf("%-15s %-15s %-30s %-20s%n", "Number", "ID", "Name", "Price (LKR)");
         System.out.println("--------------------------------------------------------------------------");
@@ -297,6 +298,7 @@ public class AppointmentManagementCLI {
             treatmentsList.add(treatment);
         } while (true);
 
+        //? Add appointment
         Appointment appointment = new Appointment(apptId, patient, doctor, appointmentDate, appointmentTime, registrationFee, treatmentsList);
         appointmentService.addAppointment(appointment);
 
@@ -304,7 +306,7 @@ public class AppointmentManagementCLI {
         printAppointmentDetails(appointment);
         printBillingDetails(appointment);
 
-        //? Add another appointment
+        //? Add another appointment or go back
         while (true) {
             System.out.print("\nDo you want to add another appointment? (y/n): ");
             String choice = scanner.nextLine();
@@ -322,6 +324,8 @@ public class AppointmentManagementCLI {
 
     //? Print Billing Details
     private void printBillingDetails(Appointment appointment) {
+
+        //? Calculate total cost
         double totalCost = 0.0;
         for (Treatment treatment : appointment.getTreatments()) {
             totalCost += treatment.getPrice();
@@ -330,6 +334,7 @@ public class AppointmentManagementCLI {
         double grandTotal = totalCost + tax + appointment.getRegistrationFee();
         double roundedGrandTotal = Math.round(grandTotal);
 
+        //? Print billing details
         System.out.printf("%-40s%n", "\t\tTotal Cost for Appointment");
         System.out.println("+-------------------------------------------+");
         System.out.printf("%-25s : %-20s %n", "Registration Fee", appointment.getRegistrationFee());
@@ -362,7 +367,6 @@ public class AppointmentManagementCLI {
             System.out.printf("%-25s : %-20s %n", treatment.getName(), treatment.getPrice());
         }
         System.out.println("---------------------------------------------\n");
-
     }
 
     //! Update Appointment
@@ -373,197 +377,213 @@ public class AppointmentManagementCLI {
             System.out.println("+--------------------------------------------------------------------+");
             System.out.println();
 
-            System.out.printf("%-30s", "Enter appointment ID to update (or Enter 'q' to go back): ");
-            String appointmentId = scanner.nextLine();
+            //? Get Appointment by ID
+            Appointment appointment = null;
 
-            if (appointmentId == null || appointmentId.isEmpty()) {
-                System.out.println("Invalid input. Please try again.");
+            while (true) {
+                System.out.printf("%-30s", "Enter appointment ID to update (or Enter 'q' to go back): ");
+                String appointmentId = scanner.nextLine().trim();
+
+                // Check if the user wants to go back
+                if (appointmentId.equalsIgnoreCase("q")) {
+                    appointmentManagement(scanner);
+                    break;
+                }
+                // Validate the appointment ID format
+                if (!isValidAppointmentId(appointmentId)) {
+                    System.out.println("\nInvalid appointment ID format. IDs should start with 'A0' and contain only alphanumeric characters.\n");
+                    continue;
+                }
+
+                // Fetch and display the appointment
+                appointment = appointmentService.getAppointmentById(appointmentId);
+                if (appointment == null) {
+                    System.out.println("\nAppointment not found. Please try again.\n");
+                } else {
+                    break;
+                }
             }
 
-            if (appointmentId.equalsIgnoreCase("q")) {
-                appointmentManagement(scanner);
-                break;
-            }
-            Appointment appointment = appointmentService.getAppointmentById(appointmentId);
+            //? Print Appointment Details
+            printAppointmentDetails(appointment);
+            System.out.println("-------------------------------------------------------------------");
 
-            if (appointment == null) {
-                System.out.println("Appointment not found. Please try again.");
+            //? Select doctor
+            System.out.println("\n--------------------------Doctors List-----------------------------");
+            List<Doctor> doctorList = doctorService.getDoctorList();
+
+            int doctorNo = 0;
+            if (doctorList.isEmpty()) {
+                System.out.println("\nNo doctor found.");
             } else {
-                printAppointmentDetails(appointment);
-                System.out.println("-------------------------------------------------------------------");
-
-                //? Select doctor
-                System.out.println("\n--------------------------Doctors List-----------------------------");
-                List<Doctor> doctorList = doctorService.getDoctorList();
-
-                int doctorNo = 0;
-                if (doctorList.isEmpty()) {
-                    System.out.println("\nNo doctor found.");
-                } else {
-                    for (Doctor doctor : doctorList) {
-                        System.out.printf("\n%-20s : %d%n", "Doctor No", ++doctorNo);
-                        System.out.printf("%-20s : %s%n", "Doctor ID", doctor.getDoctorId());
-                        System.out.printf("%-20s : %s%n", "Name", doctor.getName());
-                        System.out.printf("%-20s : %s%n", "Phone", doctor.getPhoneNo());
-                        System.out.printf("%-20s : %s%n", "Assigned Time Slots", doctorService.printAvailableTimeRange(doctor));
-                    }
+                for (Doctor doctor : doctorList) {
+                    System.out.printf("\n%-20s : %d%n", "Doctor No", ++doctorNo);
+                    System.out.printf("%-20s : %s%n", "Doctor ID", doctor.getDoctorId());
+                    System.out.printf("%-20s : %s%n", "Name", doctor.getName());
+                    System.out.printf("%-20s : %s%n", "Phone", doctor.getPhoneNo());
+                    System.out.printf("%-20s : %s%n", "Assigned Time Slots", doctorService.printAvailableTimeRange(doctor));
                 }
-                System.out.println("\n------------------------------------------------------------------");
+            }
+            System.out.println("\n------------------------------------------------------------------");
 
-                Doctor doctor = null;
-                while (doctor == null) {
-                    System.out.print("Enter new doctor No to assign (or press Enter to skip): ");
-                    String input = scanner.nextLine();
-                    if (input.isEmpty()) {
-                        doctor = appointment.getDoctor();
-                        break;
-                    }
-                    int index = Integer.parseInt(input) - 1;
-                    try {
-                        doctor = doctorList.get(index);
-                    } catch (IndexOutOfBoundsException e) {
-                        System.out.println("Doctor not found. Please try again.");
-                    }
+            //? Get new doctor
+            Doctor doctor = null;
+            while (doctor == null) {
+                System.out.print("Enter new doctor No to assign (or press Enter to skip): ");
+                String input = scanner.nextLine();
+                if (input.isEmpty()) {
+                    doctor = appointment.getDoctor();
+                    break;
                 }
-
-                //? Update the date for the appointment if the doctor is different and user wants
-                LocalDate appointmentDate = null;
-                LocalTime appointmentTime = null;
-
-                String input = null;
-                if (Objects.equals(doctor.getDoctorId(), appointment.getDoctor().getDoctorId())) {
-                    System.out.print("\nDo you want to choose a new appointment date and time? (y/n): ");
-                    input = scanner.nextLine();
-                } else {
-                    input = "y";
+                int index = Integer.parseInt(input) - 1;
+                try {
+                    doctor = doctorList.get(index);
+                } catch (IndexOutOfBoundsException e) {
+                    System.out.println("Doctor not found. Please try again.");
                 }
+            }
 
-                if (input.equalsIgnoreCase("n")) {
-                    appointmentDate = appointment.getAppointmentDate();
-                    appointmentTime = appointment.getAppointmentTime();
+            //? Update the date for the appointment if the doctor is different and user wants
+            LocalDate appointmentDate = null;
+            LocalTime appointmentTime = null;
 
-                    appointment.setAppointmentDate(appointmentDate);
-                    appointment.setAppointmentTime(appointmentTime);
-                }
-                if (input.equalsIgnoreCase("y")) {
-                    TimeSlots availableTimeForDay = null;
-                    while (availableTimeForDay == null) {
-                        while (appointmentDate == null) {
+            String input = null;
+            if (Objects.equals(doctor.getDoctorId(), appointment.getDoctor().getDoctorId())) {
+                System.out.print("\nDo you want to choose a new appointment date and time? (y/n): ");
+                input = scanner.nextLine();
+            } else {
+                input = "y";
+            }
+            if (input.equalsIgnoreCase("n")) {
+                appointmentDate = appointment.getAppointmentDate();
+                appointmentTime = appointment.getAppointmentTime();
 
-                            //? Suggest upcoming two available dates based on doctor's availability
-                            List<LocalDate> suggestedDates = doctorService.getUpcomingTwoAvailableDates(doctor);
+                appointment.setAppointmentDate(appointmentDate);
+                appointment.setAppointmentTime(appointmentTime);
+            }
 
-                            // Display suggested dates
-                            System.out.println("\nUpcoming available dates for Doctor " + doctor.getName() + ":");
-                            for (int i = 0; i < suggestedDates.size(); i++) {
-                                System.out.println((i + 1) + ". " + suggestedDates.get(i));
-                            }
+            //? Update the date for the appointment
+            if (input.equalsIgnoreCase("y")) {
+                TimeSlots availableTimeForDay = null;
+                while (availableTimeForDay == null) {
+                    while (appointmentDate == null) {
 
-                            System.out.print("\nEnter appointment date (YYYY-MM-DD) or choose a suggested date (1 or 2): ");
-                            String dateInput = scanner.nextLine();
+                        //? Suggest upcoming two available dates based on doctor's availability
+                        List<LocalDate> suggestedDates = doctorService.getUpcomingTwoAvailableDates(doctor);
 
-                            try {
-                                if (dateInput.equals("1") || dateInput.equals("2")) {
-                                    // Use the suggested date
-                                    appointmentDate = suggestedDates.get(Integer.parseInt(dateInput) - 1);
-                                } else {
-                                    // Parse user input date
-                                    appointmentDate = LocalDate.parse(dateInput);
-                                    LocalDate today = LocalDate.now();
-
-                                    if (appointmentDate.isBefore(today)) {
-                                        System.out.println("The date cannot be in the past. Please enter a valid future date.");
-                                        appointmentDate = null;  // Reset appointment date to loop again
-                                    }
-                                }
-                            } catch (DateTimeParseException e) {
-                                System.out.println("Invalid date. Please try again.");
-                                appointmentDate = null;  // Reset appointment date to loop again
-                            }
+                        // Display suggested dates
+                        System.out.println("\nUpcoming available dates for Doctor " + doctor.getName() + ":");
+                        for (int i = 0; i < suggestedDates.size(); i++) {
+                            System.out.println((i + 1) + ". " + suggestedDates.get(i));
                         }
 
-                        // Check the doctor's availability for the entered day
-                        DayOfWeek dayOfWeek = appointmentDate.getDayOfWeek();
-                        for (TimeSlots slot : doctor.getAvailability()) {
-                            if (slot.getDay().equalsIgnoreCase(dayOfWeek.toString())) {
-                                availableTimeForDay = slot;
-                                break;
-                            }
-                        }
-
-                        if (availableTimeForDay == null) {
-                            System.out.println("The doctor is not available on " + dayOfWeek + ". Please choose another date.");
-                            appointmentDate = null;  // Reset date so user can enter a new one
-                        }
-                    }
-
-                    //? Get the time for the appointment
-                    List<LocalTime> availableSlots = doctorService.getAvailableTimeSlots(doctor, appointmentDate);
-
-                    // Display available time slots
-                    if (availableSlots.isEmpty()) {
-                        System.out.println("No available time slots for this date.");
-                        return;
-                    }
-
-                    DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
-
-                    System.out.println("\nAvailable Time Slots for " + appointmentDate + ":");
-
-                    int slotNumber = 1;
-                    for (LocalTime slot : availableSlots) {
-                        String formattedTime = slot.format(timeFormatter);
-                        System.out.printf("%d. %s%n", slotNumber++, formattedTime);
-                    }
-
-                    while (appointmentTime == null) {
-                        System.out.print("\nEnter the desired time slot Number: ");
-                        int inputSlotNo = scanner.nextInt();
-                        scanner.nextLine();
+                        System.out.print("\nEnter appointment date (YYYY-MM-DD) or choose a suggested date (1 or 2): ");
+                        String dateInput = scanner.nextLine();
 
                         try {
-                            appointmentTime = availableSlots.get(inputSlotNo - 1);
-                        } catch (IndexOutOfBoundsException e) {
-                            System.out.println("Input the number for the selected Slot.");
+                            if (dateInput.equals("1") || dateInput.equals("2")) {
+                                // Use the suggested date
+                                appointmentDate = suggestedDates.get(Integer.parseInt(dateInput) - 1);
+                            } else {
+                                // Parse user input date
+                                appointmentDate = LocalDate.parse(dateInput);
+                                LocalDate today = LocalDate.now();
+
+                                if (appointmentDate.isBefore(today)) {
+                                    System.out.println("The date cannot be in the past. Please enter a valid future date.");
+                                    appointmentDate = null;  // Reset appointment date to loop again
+                                }
+                            }
+                        } catch (DateTimeParseException e) {
+                            System.out.println("Invalid date. Please try again.");
+                            appointmentDate = null;  // Reset appointment date to loop again
                         }
                     }
-                    appointment.setAppointmentDate(appointmentDate);
-                    appointment.setAppointmentTime(appointmentTime);
+
+                    // Check the doctor's availability for the entered day
+                    DayOfWeek dayOfWeek = appointmentDate.getDayOfWeek();
+                    for (TimeSlots slot : doctor.getAvailability()) {
+                        if (slot.getDay().equalsIgnoreCase(dayOfWeek.toString())) {
+                            availableTimeForDay = slot;
+                            break;
+                        }
+                    }
+
+                    if (availableTimeForDay == null) {
+                        System.out.println("The doctor is not available on " + dayOfWeek + ". Please choose another date.");
+                        appointmentDate = null;  // Reset date so user can enter a new one
+                    }
                 }
 
-                appointment.setDoctor(doctor);
+                //? Get the time for the appointment
+                List<LocalTime> availableSlots = doctorService.getAvailableTimeSlots(doctor, appointmentDate);
 
-                System.out.println("\n---------------------Current Patient Details---------------------");
-
-                System.out.printf("%-20s : %s%n", "Patient Name", appointment.getPatient().getName());
-                System.out.printf("%-20s : %s%n", "Patient Phone Number", appointment.getPatient().getPhoneNo());
-                System.out.printf("%-20s : %s%n", "Patient Email", appointment.getPatient().getEmail());
-                System.out.printf("%-20s : %s%n", "Patient NIC", appointment.getPatient().getNic());
-                System.out.println("-----------------------------------------------------------------");
-
-                System.out.print("\nDo you want to update patient details? [y/n]: ");
-                String choice = scanner.nextLine();
-
-                if (choice.equalsIgnoreCase("y")) {
-                    System.out.println("\n---------------------Update Patient Details---------------------");
-                    updateField(scanner, "patient name", appointment.getPatient()::setName);
-                    updateField(scanner, "patient phone number", appointment.getPatient()::setPhoneNo);
-                    updateField(scanner, "patient email", appointment.getPatient()::setEmail);
-                    updateField(scanner, "patient NIC", appointment.getPatient()::setNic);
+                //? Display available time slots
+                if (availableSlots.isEmpty()) {
+                    System.out.println("No available time slots for this date.");
+                    return;
                 }
 
-                System.out.println("-----------------------------------------------------------------");
+                DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
 
-                System.out.println("\n*----------------Appointment updated successfully----------------*");
+                System.out.println("\nAvailable Time Slots for " + appointmentDate + ":");
+
+                int slotNumber = 1;
+                for (LocalTime slot : availableSlots) {
+                    String formattedTime = slot.format(timeFormatter);
+                    System.out.printf("%d. %s%n", slotNumber++, formattedTime);
+                }
+
+                while (appointmentTime == null) {
+                    System.out.print("\nEnter the desired time slot Number: ");
+                    int inputSlotNo = scanner.nextInt();
+                    scanner.nextLine();
+
+                    try {
+                        appointmentTime = availableSlots.get(inputSlotNo - 1);
+                    } catch (IndexOutOfBoundsException e) {
+                        System.out.println("Input the number for the selected Slot.");
+                    }
+                }
+                appointment.setAppointmentDate(appointmentDate);
+                appointment.setAppointmentTime(appointmentTime);
             }
 
-            System.out.print("\nDo you want to go back to the previous menu? (y/n): ");
+            //? Set the doctor
+            appointment.setDoctor(doctor);
+
+            //? Print Patient Details
+            System.out.println("\n---------------------Current Patient Details---------------------");
+
+            System.out.printf("%-20s : %s%n", "Patient Name", appointment.getPatient().getName());
+            System.out.printf("%-20s : %s%n", "Patient Phone Number", appointment.getPatient().getPhoneNo());
+            System.out.printf("%-20s : %s%n", "Patient Email", appointment.getPatient().getEmail());
+            System.out.printf("%-20s : %s%n", "Patient NIC", appointment.getPatient().getNic());
+            System.out.println("-----------------------------------------------------------------");
+
+            System.out.print("\nDo you want to update patient details? [y/n]: ");
             String choice = scanner.nextLine();
+
+            //? Update Patient Details
             if (choice.equalsIgnoreCase("y")) {
+                System.out.println("\n---------------------Update Patient Details---------------------");
+                updateField(scanner, "patient name", appointment.getPatient()::setName);
+                updateField(scanner, "patient phone number", appointment.getPatient()::setPhoneNo);
+                updateField(scanner, "patient email", appointment.getPatient()::setEmail);
+                updateField(scanner, "patient NIC", appointment.getPatient()::setNic);
+            }
+
+            System.out.println("-----------------------------------------------------------------");
+
+            System.out.println("\n*----------------Appointment updated successfully----------------*");
+
+            System.out.print("\nDo you want to go back to the previous menu? (y/n): ");
+            String input2 = scanner.nextLine();
+            if (input2.equalsIgnoreCase("y")) {
                 appointmentManagement(scanner);
                 break;
             }
-            if (choice.equalsIgnoreCase("n")) {
+            if (input2.equalsIgnoreCase("n")) {
                 updateAppointment(scanner);
                 break;
             } else {
@@ -606,24 +626,34 @@ public class AppointmentManagementCLI {
             }
         }
 
-        do {
-            System.out.print("Enter appointment id: ");
-            String appointmentId = scanner.nextLine();
-            if (appointmentId == null || appointmentId.isEmpty()) {
-                System.out.println("Invalid input. Please try again.");
-            }
+        //? Get Appointment by ID
+        Appointment appointment = null;
+
+        while (true) {
+            System.out.printf("%-30s", "Enter appointment ID to update (or Enter 'q' to go back): ");
+            String appointmentId = scanner.nextLine().trim();
+
+            // Check if the user wants to go back
             if (appointmentId.equalsIgnoreCase("q")) {
                 appointmentManagement(scanner);
                 break;
             }
-            Appointment appointment = appointmentService.getAppointmentById(appointmentId);
-            if (appointment == null) {
-                System.out.println("Appointment not found. Please try again.");
-            } else {
-                appointmentService.deleteAppointment(appointment);
-                System.out.println("Appointment deleted successfully.");
+            // Validate the appointment ID format
+            if (!isValidAppointmentId(appointmentId)) {
+                System.out.println("\nInvalid appointment ID format. IDs should start with 'A0' and contain only alphanumeric characters.\n");
+                continue;
             }
 
+            // Fetch and display the appointment
+            appointment = appointmentService.getAppointmentById(appointmentId);
+            if (appointment == null) {
+                System.out.println("\nAppointment not found. Please try again.\n");
+            } else {
+                break;
+            }
+        }
+
+        do {
             System.out.print("\nDo you want to go back to the previous menu? (y/n): ");
             String choice = scanner.nextLine();
             if (choice.equalsIgnoreCase("y")) {
@@ -772,7 +802,7 @@ public class AppointmentManagementCLI {
         }
     }
 
-    // Helper method to validate appointment ID format
+    //? Helper method to validate appointment ID format
     private boolean isValidAppointmentId(String appointmentId) {
         return appointmentId.startsWith("A0") && appointmentId.matches("A0\\w+");
     }
@@ -829,5 +859,4 @@ public class AppointmentManagementCLI {
             }
         } while (true);
     }
-
 }

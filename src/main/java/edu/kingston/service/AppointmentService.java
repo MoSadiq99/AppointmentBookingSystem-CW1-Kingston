@@ -1,6 +1,7 @@
 package edu.kingston.service;
 
 import edu.kingston.model.Appointment;
+import edu.kingston.model.Treatment;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -8,6 +9,7 @@ import java.util.List;
 
 public class AppointmentService {
 
+    //* Appointment List
     List<Appointment> appointmentsList = new ArrayList<>();
 
     //? Add appointment
@@ -97,18 +99,32 @@ public class AppointmentService {
 
     //? Get All appointment Details Printed
     public void getAllAppointments() {
-
         for (Appointment appointment : appointmentsList) {
-            System.out.printf("\n%-40s%n", "+-------------------------Appointment Details------------------------+");
-            System.out.printf("%-30s : %-20s %n", "Appointment ID", appointment.getAppointmentId());
-            System.out.printf("%-30s : %-20s %n", "Patient ID", appointment.getPatient().getPatientId());
-            System.out.printf("%-30s : %-20s %n", "Patient Name", appointment.getPatient().getName());
-            System.out.printf("%-30s : %-20s %n", "Doctor ID", appointment.getDoctor().getDoctorId());
-            System.out.printf("%-30s : %-20s %n", "Doctor Name", appointment.getDoctor().getName());
-            System.out.printf("%-30s : %-20s %n", "Appointment Date", appointment.getAppointmentDate());
-            System.out.printf("%-30s : %-20s %n", "Appointment Time", appointment.getAppointmentTime());
-            System.out.printf("%-30s : %-20s %n", "Registration Fee", appointment.getRegistrationFee());
-            System.out.println("+-------------------------------------------------------------------+");
+            appointmentsList.forEach(this::printAppointmentDetails);
         }
+    }
+
+    //? Print Appointment Details
+    private void printAppointmentDetails(Appointment appointment) {
+        System.out.printf("\n%-40s%n", "\t\t\tAppointment Details");
+        System.out.println("+-------------------------------------------+");
+        System.out.printf("%-25s : %-20s %n", "Appointment ID", appointment.getAppointmentId());
+        System.out.printf("%-25s : %-20s %n", "Appointment Date", appointment.getAppointmentDate());
+        System.out.printf("%-25s : %-20s %n", "Appointment Time", appointment.getAppointmentTime());
+        System.out.println("---------------------------------------------");
+        System.out.printf("%-25s : %-20s %n", "Doctor ID", appointment.getDoctor().getDoctorId());
+        System.out.printf("%-25s : %-20s %n", "Doctor Name", appointment.getDoctor().getName());
+        System.out.println("---------------------------------------------");
+        System.out.printf("%-25s : %-20s %n", "Patient ID", appointment.getPatient().getPatientId());
+        System.out.printf("%-25s : %-20s %n", "Patient Name", appointment.getPatient().getName());
+        System.out.println("---------------------------------------------");
+        System.out.printf("%-40s%n", "\t\t\tSelected Treatments");
+        System.out.println("+-------------------------------------------+");
+        System.out.printf("%-25s : %-25s %n", "Treatment", "Price");
+        System.out.println("---------------------------------------------");
+        for (Treatment treatment : appointment.getTreatments()) {
+            System.out.printf("%-25s : %-20s %n", treatment.getName(), treatment.getPrice());
+        }
+        System.out.println("---------------------------------------------\n");
     }
 }

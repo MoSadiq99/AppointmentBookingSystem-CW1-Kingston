@@ -59,15 +59,19 @@ public class HomeCLI {
 
         switch (choice) {
             case 1:
+                // Start the Appointment Management CLI
                 appointmentManagementCLI.appointmentManagement(scanner);
                 break;
             case 2:
+                // Start the Billing Management CLI
                 billingManagementCLI.billingManagement(scanner);
                 break;
             case 3:
+                // Start the Doctor Management CLI
                 doctorManagementCLI.doctorManagement(scanner);
                 break;
             case 4:
+                // Start the Treatment Management CLI
                 treatmentManagementCLI.treatmentManagement(scanner);
                 break;
             case 5:

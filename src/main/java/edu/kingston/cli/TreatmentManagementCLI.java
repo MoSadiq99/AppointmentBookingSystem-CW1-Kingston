@@ -60,6 +60,7 @@ public class TreatmentManagementCLI {
         }
     }
 
+    //? Generate unique treatment ID
     private static int counter = 1;
     private String generateIdForTreatment() {
         String base = "T";
@@ -69,6 +70,7 @@ public class TreatmentManagementCLI {
         return id;
     }
 
+    //? Add treatment
     public void addTreatment(Scanner scanner) {
 
         do{
@@ -98,6 +100,7 @@ public class TreatmentManagementCLI {
         }while (true);
     }
 
+    //? View treatments
     public void viewTreatments(Scanner scanner) {
 
         System.out.println("\n+--------------------------------------------------------------------+");
@@ -128,7 +131,7 @@ public class TreatmentManagementCLI {
         }
     }
 
-
+    //? Update treatment
     public void updateTreatment(Scanner scanner) {
 
         System.out.println("\n+--------------------------------------------------------------------+");
@@ -159,6 +162,7 @@ public class TreatmentManagementCLI {
         treatment.setPrice(newTreatmentPrice);
     }
 
+    //? Delete treatment
     public void deleteTreatment(Scanner scanner) {
 
         System.out.println("\n+--------------------------------------------------------------------+");

@@ -57,18 +57,13 @@ public class BillingManagementCLI {
         }
     }
 
-    // Helper method to validate appointment ID format
-    private boolean isValidAppointmentId(String appointmentId) {
-        return appointmentId.startsWith("A0") && appointmentId.matches("A0\\w+");
-    }
-
     //? Generate Bill
     public void generateBill(Scanner scanner) {
         System.out.println("\n+------------------------------------------------+");
         System.out.println("|                      Billing                   |");
         System.out.println("+------------------------------------------------+\n");
 
-        //? Get Appointment by
+        //? Get Appointment by ID
         Appointment appointment = null;
 
         while (true) {
@@ -307,6 +302,11 @@ public class BillingManagementCLI {
         String base = "B" + String.format("%02d", counter);
         counter++;
         return base;
+    }
+
+    //? Helper method to validate appointment ID format
+    private boolean isValidAppointmentId(String appointmentId) {
+        return appointmentId.startsWith("A0") && appointmentId.matches("A0\\w+");
     }
 
     //? View bills menu
